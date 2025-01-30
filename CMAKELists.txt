@@ -1,0 +1,48 @@
+cmake_minimum_required(VERSION 3.10)
+project(notifier VERSION 1.0 DESCRIPTION "Lightweight Notifier Application" LANGUAGES CXX)
+
+# Specify C++ Standard
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+# Source and Header Files
+set(SRC_FILES
+    src/main.cpp
+    src/notifier.cpp
+    src/session.cpp
+    src/windows_api.cpp
+    src/notification.cpp
+)
+set(HEADER_FILES
+    include/notifier.h
+    include/session.h
+    include/windows_api.h
+    include/notification.h
+)
+
+# Add Executable Target
+add_executable(notifier ${SRC_FILES} ${HEADER_FILES})
+
+# Include Directories
+target_include_directories(notifier PRIVATE include)
+
+# Compiler-Specific Flags (For MSVC)
+if(MSVC)
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)  # Suppress security warnings
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17 /W4")  # Enable C++17 and warnings
+endif()
+
+# Link Libraries (Windows-specific)
+if(WIN32)
+    target_link_libraries(notifier winmm WindowsApp.lib) # Links Windows Multimedia API and Notifications
+endif()
+
+# Find and Link Boost (if needed)
+find_package(Boost REQUIRED)
+if(Boost_FOUND)
+    target_include_directories(notifier PRIVATE ${Boost_INCLUDE_DIRS})
+    target_link_libraries(notifier PRIVATE ${Boost_LIBRARIES})
+endif()
+
+# Set Output Directory for Binary
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
