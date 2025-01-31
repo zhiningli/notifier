@@ -5,6 +5,11 @@ project(notifier VERSION 1.0 DESCRIPTION "Lightweight Notifier Application" LANG
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+# Enable vcpkg integration (if using vcpkg)
+if(DEFINED ENV{VCPKG_ROOT})
+    set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")
+endif()
+
 # Source and Header Files
 set(SRC_FILES
     src/main.cpp
@@ -12,13 +17,13 @@ set(SRC_FILES
     src/session.cpp
     src/windows_api.cpp
     src/notification.cpp
-)
+ "src/shortcut_util.cpp")
 set(HEADER_FILES
     include/notifier.h
     include/session.h
     include/windows_api.h
     include/notification.h
-)
+ "include/shortcut_util.h")
 
 # Add Executable Target
 add_executable(notifier ${SRC_FILES} ${HEADER_FILES})
@@ -26,23 +31,28 @@ add_executable(notifier ${SRC_FILES} ${HEADER_FILES})
 # Include Directories
 target_include_directories(notifier PRIVATE include)
 
-# Compiler-Specific Flags (For MSVC)
+# Windows Runtime Support
+target_compile_options(notifier PRIVATE /await)
+target_link_libraries(notifier WindowsAPP.lib)
+
+# Configure MSVC-specific settings
 if(MSVC)
-    add_definitions(-D_CRT_SECURE_NO_WARNINGS)  # Suppress security warnings
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17 /W4")  # Enable C++17 and warnings
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17 /W4 /EHsc")
 endif()
 
 # Link Libraries (Windows-specific)
 if(WIN32)
-    target_link_libraries(notifier winmm WindowsApp.lib) # Links Windows Multimedia API and Notifications
+    target_link_libraries(notifier winmm WindowsApp.lib)
 endif()
 
-# Find and Link Boost (if needed)
-find_package(Boost REQUIRED)
-if(Boost_FOUND)
-    target_include_directories(notifier PRIVATE ${Boost_INCLUDE_DIRS})
-    target_link_libraries(notifier PRIVATE ${Boost_LIBRARIES})
-endif()
+add_custom_command(
+    TARGET notifier
+    PRE_BUILD
+    COMMAND IF EXIST C:\\Users\\Zhining\\source\\repos\\notifier\\out\\build\\x64-Debug\\notifier.exe (del /Q C:\\Users\\Zhining\\source\\repos\\notifier\\out\\build\\x64-Debug\\notifier.exe)
+    COMMENT "Checking and deleting notifier.exe if it exists"
+)
 
 # Set Output Directory for Binary
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
