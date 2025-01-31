@@ -13,13 +13,13 @@ endif()
 # Source and Header Files
 set(SRC_FILES
     src/main.cpp
-    src/notifier.cpp
+    "src/notificationManager.cpp"
     src/session.cpp
     src/windows_api.cpp
     src/notification.cpp
     src/shortcut_util.cpp)
 set(HEADER_FILES
-    include/notifier.h
+    "include/notificationManager.h"
     include/session.h
     include/windows_api.h
     include/notification.h

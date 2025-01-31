@@ -46,6 +46,7 @@ public:
 	const SourceEnum getSource() const;
 	const StatusEnum getStatus() const;
 	const std::chrono::system_clock::time_point getCreationTime() const;
+	const std::chrono::system_clock::time_point getExpiryTime() const;
 
 	void setTitle(const std::string& title);
 	void setMessage(const std::string& message);
@@ -53,6 +54,10 @@ public:
 	void setSessionID(const std::string& sessionID);
 	void setSource(SourceEnum source);
 	void setStatus(StatusEnum status);
+	void setExpiryTime(const std::chrono::system_clock::time_point& expiryTime);
+
+	// check if notification is expired
+	bool isExpired();
 
 private:
 	std::string title;
@@ -62,6 +67,7 @@ private:
 	SourceEnum source;
 	StatusEnum status;
 	std::chrono::system_clock::time_point creationTime;
+	std::chrono::system_clock::time_point expiryTime;
 };
 
 #endif

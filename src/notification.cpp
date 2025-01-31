@@ -54,6 +54,10 @@ const std::chrono::system_clock::time_point Notification::getCreationTime() cons
 	return creationTime;
 }
 
+const std::chrono::system_clock::time_point Notification::getExpiryTime() const {
+	return expiryTime;
+}
+
 void Notification::setTitle(const std::string& title) {
 	this->title = title;
 }
@@ -76,4 +80,22 @@ void Notification::setSource(SourceEnum source) {
 
 void Notification::setStatus(StatusEnum status) {
 	this->status = status;
+}
+
+void Notification::setExpiryTime(const std::chrono::system_clock::time_point& expiryTime) {
+	this->expiryTime = expiryTime;
+	this->isExpired();
+}
+
+
+// check if notification is expired and set the status accordingly
+bool Notification::isExpired() {
+	auto currentTime = std::chrono::system_clock::now();
+	if (currentTime > expiryTime) {
+		status = StatusEnum::Expired;
+		return true;
+	}
+	else {
+		return false;
+	}
 }
