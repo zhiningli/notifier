@@ -9,6 +9,8 @@
 #include <vector>
 #include <iostream>
 #include <mutex> // For thread safety
+#include <thread> // For expiry checker thread
+#include <atomic> // For thread control
 
 class NotificationManager {
 public:
@@ -18,7 +20,7 @@ public:
 	void addNotification(const Notification& notification);
 	void displayAllNotifications();
 	void displayLatestNotification();
-	void removeExpiredNotifications();
+	void updateExpiredNotifications();
 	void NotificationManager::updateNotificationExpiry(const std::string& sessionID, const std::chrono::system_clock::time_point& newExpiry);
 	~NotificationManager();
 

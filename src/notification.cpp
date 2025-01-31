@@ -96,6 +96,7 @@ bool Notification::isExpired() {
 		return true;
 	}
 	else {
+		status = StatusEnum::Active;
 		return false;
 	}
 }

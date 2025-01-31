@@ -43,7 +43,7 @@ void NotificationManager::displayLatestNotification() {
 	}
 }
 
-void NotificationManager::removeExpiredNotifications() {
+void NotificationManager::updateExpiredNotifications() {
 	std::lock_guard<std::mutex> lock(managerMutex);
 
 	auto now = std::chrono::system_clock::now();
