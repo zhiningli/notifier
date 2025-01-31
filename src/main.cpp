@@ -24,23 +24,21 @@ void setAppUserModelID() {
 }
 
 int main() {
-    // ✅ Step 1: Create a shortcut in Start Menu (required for notifications)
+    // Step 1: Create a shortcut
     HRESULT shortcutResult = CreateAppShortcut();
     if (FAILED(shortcutResult)) {
         std::cerr << "Failed to create shortcut! HRESULT: " << shortcutResult << std::endl;
+        return shortcutResult;
     }
 
-    // ✅ Step 2: Set AppUserModelID
+    // Step 2: Set AppUserModelID
     setAppUserModelID();
 
-    // ✅ Step 3: Register signal handler
-    std::signal(SIGINT, signalHandler);
-    std::signal(SIGTERM, signalHandler);
+    // Step 3: Send a test notification
+    WindowsAPI::showNotification("Test Notification", "This is a test notification.");
 
-    // ✅ Step 4: Send Test Notification
-    WindowsAPI::showNotification("This is a test notification", "Hello, how are you");
-
-    std::cout << "\n\n\n\n\Program running. Press Ctrl + C to terminate";
+    // Step 4: Keep the program running
+    std::cout << "Program running. Press Ctrl + C to terminate." << std::endl;
     while (true) {
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
