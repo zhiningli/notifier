@@ -18,6 +18,7 @@ public:
 	static NotificationManager& getInstance();
 
 	void addNotification(const Notification& notification);
+	void removeNotification(const std::string& sessionID);
 	void displayAllNotifications();
 	void displayLatestNotification();
 	void updateExpiredNotifications();
@@ -37,6 +38,11 @@ private:
 	std::mutex managerMutex; // For thread safety
 	
 	WindowsAPI windowsAPI; // For displaying toast notifications
+
+	//Expiry checker
+	std::atomic<bool> stopExpiryChecker;
+	std::thread expiryCheckerThread;
+	void expiryChecker();
 
 	NotificationManager() = default;
 	NotificationManager(const NotificationManager&) = delete;
