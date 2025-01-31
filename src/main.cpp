@@ -35,7 +35,7 @@ int main() {
     setAppUserModelID();
 
     // Step 3: Send a test notification
-    WindowsAPI::showNotification("Test Notification", "This is a test notification.");
+    WindowsAPI::showNotification("Notifier is running!", "Finally, you can keep track of the ongoing notification from...");
 
     // Step 4: Keep the program running
     std::cout << "Program running. Press Ctrl + C to terminate." << std::endl;

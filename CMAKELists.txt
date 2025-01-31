@@ -17,13 +17,13 @@ set(SRC_FILES
     src/session.cpp
     src/windows_api.cpp
     src/notification.cpp
- "src/shortcut_util.cpp")
+    src/shortcut_util.cpp)
 set(HEADER_FILES
     include/notifier.h
     include/session.h
     include/windows_api.h
     include/notification.h
- "include/shortcut_util.h")
+    include/shortcut_util.h)
 
 # Add Executable Target
 add_executable(notifier ${SRC_FILES} ${HEADER_FILES})
