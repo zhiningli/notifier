@@ -8,45 +8,46 @@
 #include <set>
 #include <vector>
 #include <iostream>
-#include <mutex> // For thread safety
-#include <thread> // For expiry checker thread
-#include <atomic> // For thread control
+#include <mutex>
+#include <thread>
+#include <atomic>
 
 class NotificationManager {
 public:
-	// Singleton pattern for instaitiating the NotificationManager only once
-	static NotificationManager& getInstance();
+    static NotificationManager& getInstance();
 
-	void addNotification(const Notification& notification);
-	void removeNotification(const std::string& sessionID);
-	void displayAllNotifications();
-	void displayLatestNotification();
-	void updateExpiredNotifications();
-	void NotificationManager::updateNotificationExpiry(const std::string& sessionID, const std::chrono::system_clock::time_point& newExpiry);
-	~NotificationManager();
+    void addNotification(const Notification& notification);
+    void removeNotification(const std::string& sessionID);
+    void displayAllNotifications();
+    void displayLatestNotification();
+    void updateExpiredNotifications();
+    void updateNotificationExpiry(const std::string& sessionID,
+        const std::chrono::system_clock::time_point& newExpiry);
+
+    ~NotificationManager();
 
 private:
+    struct ExpiryComparator {
+        bool operator()(const std::shared_ptr<Notification>& a,
+            const std::shared_ptr<Notification>& b) const {
+            return a->getExpiryTime() < b->getExpiryTime();
+        }
+    };
 
-	struct ExpiryComparator {
-		bool operator()(const Notification* a, const Notification* b) const {
-			return a->getExpiryTime() < b->getExpiryTime();
-		}
-	};
 
-	std::unordered_map<std::string, Notification> notifications;
-	std::multiset<Notification*, ExpiryComparator> expirySet; // For sort order by expiry time
-	std::mutex managerMutex; // For thread safety
-	
-	WindowsAPI windowsAPI; // For displaying toast notifications
+    std::unordered_map<std::string, std::shared_ptr<Notification>> notifications;
+    std::multiset<std::shared_ptr<Notification>, ExpiryComparator> expirySet;
+    std::mutex managerMutex;
 
-	//Expiry checker
-	std::atomic<bool> stopExpiryChecker;
-	std::thread expiryCheckerThread;
-	void expiryChecker();
+    WindowsAPI windowsAPI;
 
-	NotificationManager() = default;
-	NotificationManager(const NotificationManager&) = delete;
-	NotificationManager& operator=(const NotificationManager&) = delete;
+    std::atomic<bool> stopExpiryChecker;
+    std::thread expiryCheckerThread;
+    void expiryChecker();
+
+    NotificationManager();
+    NotificationManager(const NotificationManager&) = delete;
+    NotificationManager& operator=(const NotificationManager&) = delete;
 };
 
-#endif
+#endif  // NOTIFICATION_MANAGER_H
