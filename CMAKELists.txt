@@ -2,10 +2,10 @@ cmake_minimum_required(VERSION 3.10)
 project(notifier VERSION 1.0 DESCRIPTION "Lightweight Notifier Application" LANGUAGES CXX)
 
 # Specify C++ Standard
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-# Enable vcpkg integration (if using vcpkg)
+# Enable vcpkg integration
 if(DEFINED ENV{VCPKG_ROOT})
     set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")
 endif()
@@ -17,13 +17,17 @@ set(SRC_FILES
     src/session.cpp
     src/windows_api.cpp
     src/notification.cpp
-    src/shortcut_util.cpp)
+    src/shortcut_util.cpp 
+    src/websocketServer.cpp
+)
 set(HEADER_FILES
     include/notificationManager.h
     include/session.h
     include/windows_api.h
     include/notification.h
-    include/shortcut_util.h)
+    include/shortcut_util.h
+    include/websocketServer.h
+)
 
 # Add Executable Target
 add_executable(notifier ${SRC_FILES} ${HEADER_FILES})
@@ -31,28 +35,18 @@ add_executable(notifier ${SRC_FILES} ${HEADER_FILES})
 # Include Directories
 target_include_directories(notifier PRIVATE include)
 
+# Find and link uWebSockets
+find_package(unofficial-uwebsockets CONFIG REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
+target_link_libraries(notifier PRIVATE WindowsApp.lib winmm unofficial::uwebsockets::uwebsockets PRIVATE nlohmann_json::nlohmann_json)
+
 # Windows Runtime Support
 target_compile_options(notifier PRIVATE /await)
-target_link_libraries(notifier WindowsApp.lib)
 
-# Configure MSVC-specific settings
 if(MSVC)
-    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17 /W4 /EHsc")
+    set(CMAKE_CXX_FLAGS "/W4 /std:c++20 /EHsc")
 endif()
 
-# Link Libraries (Windows-specific)
-if(WIN32)
-    target_link_libraries(notifier winmm WindowsApp.lib)
-endif()
-
-add_custom_command(
-    TARGET notifier
-    PRE_BUILD
-    COMMAND IF EXIST C:\\Users\\Zhining\\source\\repos\\notifier\\out\\build\\x64-Debug\\notifier.exe (del /Q C:\\Users\\Zhining\\source\\repos\\notifier\\out\\build\\x64-Debug\\notifier.exe)
-    COMMENT "Checking and deleting notifier.exe if it exists"
-)
 
 # Set Output Directory for Binary
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-
