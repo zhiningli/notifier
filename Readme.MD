@@ -80,6 +80,4 @@ Once connected, you can send notifications to the server. The server expects not
 ## License
 This project is licensed under the MIT License.
 
-Thank you for using Lightweight Not
-
 
