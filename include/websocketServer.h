@@ -6,7 +6,7 @@
 #include <nlohmann/json.hpp>
 #include <iostream>
 #include <string>
-#include <unordered_set>
+#include <unordered_map>
 #include <atomic>
 #include <shared_mutex>
 
@@ -16,7 +16,7 @@ struct UserData {
 
 class WebSocketServer {
 public:
-    WebSocketServer(NotificationManager& manager); 
+    WebSocketServer(NotificationManager& manager);
     ~WebSocketServer();
     void run();
     void stop();
@@ -26,13 +26,17 @@ public:
 private:
     int port;
     std::atomic<bool> keepRunning;
-    NotificationManager& notificationManager; 
+    NotificationManager& notificationManager;
 
-    std::unordered_set<uWS::WebSocket<false, true, UserData>*> activeConnections;
+	std::unordered_map<std::string, uWS::WebSocket<false, true, UserData>*> activeConnections;
     std::shared_mutex connectionsMutex;
 
+    std::bitset<32> usedIDs;
+    std::shared_mutex idMutex; 
+
+	std::string generateSessionID();
+	void freeSessionID(const std::string& sessionID);
     void handleMessage(std::string message, uWS::WebSocket<false, true, UserData>* ws);
 };
 
 #endif // WEBSOCKETSERVER_H
-

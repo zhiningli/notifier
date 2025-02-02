@@ -20,10 +20,14 @@ public:
         std::cout << "Press Ctrl + C again to exit the program.\n";
 	}
 
-	static void displayAcknowledgement(const std::string& sessionID, std::string& clientID,  std::string& clientSource) {
+	static void displayAcknowledgement(const std::string& sessionID) {
         std::cout << "[ACK] Connection (sessionID: " << sessionID << " ) established \n";
-        std::cout << "client ID: " << clientID << "source: " << clientSource<< "\n";
 	}
+
+    static void displayTerminationAcknowledgement(const std::string& sessionID, int& code, std::string_view& message) {
+        std::cout << "[ACK] Connection (sessionID: " << sessionID << " ) terminated \n";
+        std::cout << "Code " << code << ". Message: " << message << std::endl;
+    }
 
     static void displayNotification(const std::string& title, const std::string& message, const std::string& source) {
         std::cout << "-----------------------------------------\n";
