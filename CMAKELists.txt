@@ -27,7 +27,7 @@ set(HEADER_FILES
     include/notification.h
     include/shortcut_util.h
     include/websocketServer.h
-)
+  "include/terminalUI.h")
 
 # Add Executable Target
 add_executable(notifier ${SRC_FILES} ${HEADER_FILES})

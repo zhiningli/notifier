@@ -8,7 +8,6 @@
 
 WebSocketServer::WebSocketServer(NotificationManager& manager)
     : port(9001), notificationManager(manager), keepRunning(true) {
-    std::cout << "WebSocketServer initialized on port " << port << std::endl;
 }
 
 WebSocketServer::~WebSocketServer() {
@@ -46,9 +45,7 @@ void WebSocketServer::run() {
                           << ". Message: " << message << std::endl;
             }
         }).listen(port, [this](auto* token) {
-            if (token) {
-                std::cout << "Server is listening on port " << port << std::endl;
-            }
+            if (token) {}
             else {
                 std::cerr << "Failed to listen on port " << port << ". Exiting..." << std::endl;
                 std::exit(EXIT_FAILURE);
