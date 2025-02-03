@@ -4,43 +4,66 @@
 #include <iostream>
 #include <thread>
 #include <csignal>
+#include <future>
 
 std::atomic<bool> keepRunning(true);
 std::atomic<bool> terminateProgramme(false);
 
 static void signalHandler(int signal) {
     if (terminateProgramme.load()) {
-        std::cout << "\nSignal received: " << signal << ". Exiting program..." << std::endl;
+        std::cout << "\n[INFO] Signal received: " << signal << ". Exiting program..." << std::endl;
         keepRunning.store(false);
-    } else {
-        std::cout << "\nSignal received: " << signal << ". Closing all connections..." << std::endl;
+    }
+    else {
+        std::cout << "\n[INFO] Signal received: " << signal << ". Closing all connections..." << std::endl;
         terminateProgramme.store(true);
     }
-
 }
 
 int main() {
     std::signal(SIGINT, signalHandler);
     std::signal(SIGTERM, signalHandler);
 
-	NotificationManager& manager = NotificationManager::getInstance();
+    NotificationManager& manager = NotificationManager::getInstance();
     WebSocketServer server(manager);
 
-    // Run the server in a separate thread
-    std::thread serverThread([&server]() { server.run(); });
+    std::thread serverThread([&server]() {
+        try {
+            server.run();
+        }
+        catch (const std::exception& e) {
+            std::cerr << "[ERROR] WebSocket server encountered an exception: " << e.what() << std::endl;
+            keepRunning.store(false);
+        }
+        });
 
-	// Display the intro message
-	TerminalUI::displayIntro();
+    // Ensure server starts before main loop
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    while (keepRunning) {
+    TerminalUI::displayIntro();
+
+    while (keepRunning.load()) {
         std::this_thread::sleep_for(std::chrono::seconds(10));
+
+        if (terminateProgramme.load()) {
+            std::cout << "[INFO] Stopping WebSocket server..." << std::endl;
+
+            // Use async with timeout to stop server safely
+            auto stopFuture = std::async(std::launch::async, [&server]() { server.stop(); });
+
+            if (stopFuture.wait_for(std::chrono::seconds(5)) == std::future_status::timeout) {
+                std::cerr << "[ERROR] Server stop() is taking too long. Forcing exit." << std::endl;
+            }
+
+            keepRunning.store(false);
+        }
     }
 
-    // Stop the server and clean up
-    server.stop();
-    serverThread.join();
+    if (serverThread.joinable()) {
+        serverThread.join();
+    }
 
-    std::cout << "Program exited gracefully." << std::endl;
-
+    std::cout << "[INFO] Program exited gracefully." << std::endl;
     return 0;
 }
+
