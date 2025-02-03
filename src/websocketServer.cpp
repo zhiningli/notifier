@@ -131,36 +131,78 @@ void WebSocketServer::freeSessionID(const std::string& sessionID) {
 
 void WebSocketServer::handleMessage(std::string message, uWS::WebSocket<false, true, UserData>* ws) {
     try {
-        std::shared_lock lock(connectionsMutex);
         auto json = nlohmann::json::parse(message);
+        std::string sessionID = json["sessionID"];
+        std::string action = json["action"];
+        auto* userData = ws->getUserData();
 
-        UserData* userData = ws->getUserData();
+        // Verify sessionID matches the WebSocket's sessionID
+        if (userData->sessionID != sessionID) {
+            throw std::runtime_error("Invalid sessionID");
+        }
 
-        std::string title = json["title"];
-        std::string msg = json["message"];
-        std::string source = json["source"];
-		std::string sessionID = json["sessionID"];
-        auto expiryTime = std::chrono::system_clock::from_time_t(json["expiry"]);
+        // Dispatch table for actions
+        static const std::unordered_map<std::string, std::function<void(const nlohmann::json&, uWS::WebSocket<false, true, UserData>*)>> actionHandlers = {
+            {"create", [this](const nlohmann::json& payload, uWS::WebSocket<false, true, UserData>* ws) {
+                std::string title = payload["title"];
+                std::string msg = payload["message"];
+                std::string source = payload["source"];
+                auto expiryTime = std::chrono::system_clock::from_time_t(payload["expiry"]);
 
-        Notification notification(title, msg, source, sessionID, Notification::SourceEnum::Cpp, expiryTime);
-        notificationManager.addNotification(notification);
-        std::cout << "Notification added by WebSocketServer: " << title << " for sessionID: " << sessionID << std::endl;
+                Notification notification = NotificationBuilder()
+                    .setTitle(title)
+                    .setMessage(msg)
+                    .setSourceID(ws->getUserData()->sessionID)
+                    .setSource(Notification::SourceEnum::Cpp)
+                    .setExpiryTime(expiryTime)
+                    .build();
 
-        notificationManager.displayAllNotifications();
+                notificationManager.addNotification(notification);
 
-        nlohmann::json response = {
-            {"status", "success"},
-            {"message", "Notification created"},
-            {"sessionID", sessionID}
+                nlohmann::json response = {{"status", "success"}, {"action", "create"}};
+                ws->send(response.dump(), uWS::OpCode::TEXT);
+            }},
+            {"update", [this](const nlohmann::json& payload, uWS::WebSocket<false, true, UserData>* ws) {
+                std::string notificationID = payload["notificationID"];
+                notificationManager.updateNotification(notificationID, payload);
+
+                nlohmann::json response = {{"status", "success"}, {"action", "update"}};
+                ws->send(response.dump(), uWS::OpCode::TEXT);
+            }},
+            {"delete", [this](const nlohmann::json& payload, uWS::WebSocket<false, true, UserData>* ws) {
+                std::string notificationID = payload["notificationID"];
+                notificationManager.removeNotification(notificationID);
+
+                nlohmann::json response = {{"status", "success"}, {"action", "delete"}};
+                ws->send(response.dump(), uWS::OpCode::TEXT);
+            }},
+            {"display", [this](const nlohmann::json& payload, uWS::WebSocket<false, true, UserData>* ws) {
+                std::string notificationID = payload["notificationID"];
+                notificationManager.displayNotification(notificationID);
+
+                nlohmann::json response = {{"status", "success"}, {"action", "display"}};
+                ws->send(response.dump(), uWS::OpCode::TEXT);
+            }},
+            {"displayAll", [this](const nlohmann::json&, uWS::WebSocket<false, true, UserData>* ws) {
+                notificationManager.displayAllNotifications();
+
+                nlohmann::json response = {{"status", "success"}, {"action", "displayAll"}};
+                ws->send(response.dump(), uWS::OpCode::TEXT);
+            }}
         };
-        ws->send(response.dump(), uWS::OpCode::TEXT);
-    }
-    catch (const nlohmann::json::exception& e) {
-        std::cerr << "Error parsing or processing JSON: " << e.what() << std::endl;
 
-        nlohmann::json errorResponse = { 
-                                        {"status", "error"}, 
-                                        {"message", "Invalid JSON format"} };
+        auto it = actionHandlers.find(action);
+        if (it != actionHandlers.end()) {
+            it->second(json["payload"], ws);
+        }
+        else {
+            throw std::runtime_error("Invalid action: " + action);
+        }
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Error handling message: " << e.what() << std::endl;
+
+        nlohmann::json errorResponse = { {"status", "error"}, {"message", e.what()} };
         ws->send(errorResponse.dump(), uWS::OpCode::TEXT);
     }
 }

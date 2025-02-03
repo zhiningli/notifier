@@ -18,7 +18,9 @@ public:
 
     void addNotification(const Notification& notification);
     void removeNotification(const std::string& sessionID);
+    void displayNotification(const std::string& notificationID);
     void displayAllNotifications();
+
 
     ~NotificationManager();
 

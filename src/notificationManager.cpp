@@ -7,9 +7,6 @@ NotificationManager& NotificationManager::getInstance() {
 }
 
 
-NotificationManager::NotificationManager() : stopExpiryChecker(false) {
-	std::cout << "NotificationManager Constructor Called" << std::endl;
-}
 
 void NotificationManager::addNotification(const Notification& notification) {
 	try {
@@ -69,6 +66,17 @@ void NotificationManager::displayAllNotifications() {
 	}
 }
 
+void NotificationManager::displayNotification(const std::string& notificationID) {
+	std::lock_guard<std::mutex> lock(managerMutex);
+	auto it = notifications.find(notificationID);
+	if (it != notifications.end()) {
+		auto notification = it->second;
+		windowsAPI.showNotification(notification->getTitle(), notification->getMessage());
+	}
+	else {
+		std::cerr << "No notification found with ID: " << notificationID << std::endl;
+	}
+}
 
 
 NotificationManager::~NotificationManager() {
