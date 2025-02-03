@@ -4,61 +4,63 @@
 #include <iostream>
 #include <string>
 #include <iomanip>
+#include "notificationManager.h"
 
 class TerminalUI {
 public:
-	static void displayIntro() {
+    static void displayIntro() {
         std::cout << "=================================================================\n";
-        std::cout << "   Thanks for using the Lightweight Notifer  \n";
-        std::cout << "   Bridging Client Scripts with Windows Toast Notifications API\n ";
+        std::cout << "   Thanks for using the Lightweight Notifier  \n";
+        std::cout << "   Bridging Client Scripts with Windows Toast Notifications API\n";
         std::cout << "=================================================================\n\n";
 
         std::cout << "Server is listening on port 9001\n";
-        std::cout << "To start use it, raise a WebSocket connection to: ws://localhost:9001\n";
-        std::cout << "\n\n To stop the programm";
+        std::cout << "To start, open a WebSocket connection at: ws://localhost:9001\n";
         std::cout << "Press Ctrl + C once to close all connections.\n";
         std::cout << "Press Ctrl + C again to exit the program.\n";
-	}
-
-	static void displayAcknowledgement(const std::string& sessionID) {
-        std::cout << "[ACK] Connection (sessionID: " << sessionID << " ) established \n";
-	}
-
-    static void displayTerminationAcknowledgement(const std::string& sessionID, int& code, std::string_view& message) {
-        std::cout << "[ACK] Connection (sessionID: " << sessionID << " ) terminated \n";
-        std::cout << "Code " << code << ". Message: " << message << std::endl;
-    }
-
-    static void displayNotification(const std::string& title, const std::string& message, const std::string& source) {
-        std::cout << "-----------------------------------------\n";
-        std::cout << "| Title   : " << std::setw(30) << std::left << title << "|\n";
-        std::cout << "| Message : " << std::setw(30) << std::left << message << "|\n";
-        std::cout << "| Source  : " << std::setw(30) << std::left << source << "|\n";
-        std::cout << "-----------------------------------------\n";
-    }
-
-    static void displayError(const std::string& errorMessage) {
-        std::cerr << "[ERROR] " << errorMessage << "\n";
-    }
-
-    static void displayPersistentMessage() {
-        // ANSI escape codes to move the cursor and clear the line
-        std::cout << "\033[2J";          // Clear the entire screen
-        std::cout << "\033[H";           // Move cursor to the top-left corner
-
-        std::cout << "=========================================\n";
-        std::cout << "   Program running: Lightweight Notifier \n";
-        std::cout << "=========================================\n";
-        std::cout << "Server is listening on port 9001\n";
-        std::cout << "To use it, raise a WebSocket connection to:\n";
-        std::cout << "    ws://localhost:9001\n";
-        std::cout << "Press Ctrl + C once to close all connections.\n";
-        std::cout << "Press Ctrl + C again to exit the program.\n";
-        std::cout << "-----------------------------------------\n\n";
     }
 
     static void refreshScreen() {
-        displayPersistentMessage();
+        std::cout << "\033[2J\033[H"; 
+
+        std::cout << "=========================================\n";
+        std::cout << "   Lightweight Notifier - Active Sessions & Notifications\n";
+        std::cout << "=========================================\n";
+        std::cout << "Server is running on port 9001\n";
+        std::cout << "WebSocket Endpoint: ws://localhost:9001\n";
+        std::cout << "Press Ctrl + C once to close all connections.\n";
+        std::cout << "Press Ctrl + C again to exit the program.\n";
+        std::cout << "-----------------------------------------\n";
+
+        std::set<std::string> activeSessions = NotificationManager::getInstance().getActiveSessions();
+        std::cout << "\n[ACTIVE SESSIONS]: ";
+        if (activeSessions.empty()) {
+            std::cout << "No active sessions.\n";
+        }
+        else {
+            for (const auto& sessionID : activeSessions) {
+                std::cout << sessionID << " ";
+            }
+            std::cout << "\n";
+        }
+
+        std::cout << "-----------------------------------------\n\n";
+
+        auto activeNotifications = NotificationManager::getInstance().getActiveNotifications();
+        if (activeNotifications.empty()) {
+            std::cout << "[INFO] No active notifications.\n";
+        }
+        else {
+            std::cout << "Active Notifications:\n";
+            for (const auto& [id, notif] : activeNotifications) {
+                std::cout << "------------------------------------------------------------\n";
+                std::cout << "| Notification ID: " << std::setw(10) << std::left << id << " |\n";
+                std::cout << "| Title   : " << std::setw(30) << std::left << notif.first << " |\n";
+                std::cout << "| Message : " << std::setw(30) << std::left << notif.second << " |\n";
+                std::cout << "------------------------------------------------------------\n";
+            }
+        }
+        std::cout << "\n";
     }
 };
 

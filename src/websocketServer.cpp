@@ -1,10 +1,8 @@
 #include "websocketServer.h"
-#include "terminalUI.h"
 #include <uwebsockets/App.h>
 #include <iostream>
 #include <nlohmann/json.hpp>
-#include <atomic>
-#include <csignal>
+#include <stdexcept>
 #include <thread>
 
 WebSocketServer::WebSocketServer(NotificationManager& manager)
@@ -17,47 +15,33 @@ WebSocketServer::~WebSocketServer() {
 }
 
 void WebSocketServer::run() {
-    uWS::App().ws<UserData>("/*", {
-        .idleTimeout = 16,
-        .open = [this](auto* ws) {
-            auto userData = ws->getUserData();
-            std::string sessionID = generateSessionID();
-            userData->sessionID = sessionID;
-            activeConnections[sessionID] = ws;
-            notificationManager.addSession(sessionID);
-            TerminalUI::displayAcknowledgement(sessionID);
-            nlohmann::json response = { {"status", "success"}, {"sessionID", sessionID} };
-            ws->send(response.dump(), uWS::OpCode::TEXT);
-        },
-        .message = [this](auto* ws, std::string_view message, uWS::OpCode opCode) {
-            if (opCode == uWS::OpCode::TEXT) {
-                std::cout << "Text message received: " << message << std::endl;
-                this->handleMessage(std::string(message), ws);
+    uWS::App()
+        .ws<UserData>("/*", {
+            .idleTimeout = 16,
+            .open = [this](uWS::WebSocket<false, true, UserData>* ws) {
+                handleConnectionOpen(ws);
+            },
+            .message = [this](uWS::WebSocket<false, true, UserData>* ws, std::string_view message, uWS::OpCode opCode) {
+                if (opCode == uWS::OpCode::TEXT) {
+                    handleMessage(std::string(message), ws);
+                }
+                 else if (opCode == uWS::OpCode::BINARY) {
+                  std::cout << "[INFO] Binary message received. Ignored." << std::endl;
+                }
+                },
+            .close = [this](uWS::WebSocket<false, true, UserData>* ws, int code, std::string_view message) {
+                handleConnectionClose(ws, code, message);
             }
-             else if (opCode == uWS::OpCode::BINARY) {
-              std::cout << "Binary message received!" << std::endl;
-            }
-        },
-        .close = [this](auto* ws, int code, std::string_view message) {
-			UserData* userData = ws->getUserData();
-			freeSessionID(userData->sessionID);
-			activeConnections.erase(userData->sessionID);
-			TerminalUI::displayTerminationAcknowledgement(
-                userData->sessionID, 
-                code, 
-                message);
-        }
         })
-    .listen(port, [this](auto* token) {
+        .listen(port, [this](auto* token) {
         if (token) {
             std::cout << "Server listening on port " << port << std::endl;
         }
         else {
-            std::cerr << "Failed to listen on port " << port << ". Exiting..." << std::endl;
-            std::exit(EXIT_FAILURE);
+            throw std::runtime_error("Failed to listen on port " + std::to_string(port));
         }
             })
-    .run();
+        .run();
 
     while (keepRunning) {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -68,28 +52,14 @@ void WebSocketServer::run() {
 
 void WebSocketServer::stop() {
     keepRunning = false;
-    closeAllConnections();
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-	std::cout << "Websocket server stopped." << std::endl;
-}
-
-
-void WebSocketServer::closeAllConnections() {
-
-
     for (auto& [sessionID, ws] : activeConnections) {
         if (ws) {
-            std::cout << "[INFO] Closing WebSocket session: " << sessionID << std::endl;
             ws->close();
-			freeSessionID(sessionID);
         }
     }
-
     activeConnections.clear();
-    std::cout << "[INFO] All WebSocket connections closed." << std::endl;
+    std::cout << "All WebSocket connections closed." << std::endl;
 }
-
-
 
 std::string WebSocketServer::generateSessionID() {
     for (size_t i = 0; i < usedIDs.size(); ++i) {
@@ -98,87 +68,92 @@ std::string WebSocketServer::generateSessionID() {
             return std::to_string(i);
         }
     }
-    
-	throw std::runtime_error("No available session IDs. Currently limited to 32. ");
-    return "";
+    throw std::runtime_error("No available session IDs. Maximum limit of 32 reached.");
 }
 
 void WebSocketServer::freeSessionID(const std::string& sessionID) {
     try {
         int id = std::stoi(sessionID);
-        if (id >= 0 && id < 32 && usedIDs.test(id)) { 
+        if (id >= 0 && id < 32) {
             usedIDs.reset(id);
         }
         else {
-            std::cerr << "Invalid sessionID: " << sessionID << " (Out of range)" << std::endl;
+            std::cerr << "[WARNING] Invalid session ID: " << sessionID << std::endl;
         }
     }
     catch (const std::exception& e) {
-        std::cerr << "Error in freeSessionID: " << e.what() << std::endl;
+        std::cerr << "[ERROR] Exception in freeSessionID: " << e.what() << std::endl;
     }
 }
 
+void WebSocketServer::handleConnectionOpen(uWS::WebSocket<false, true, UserData>* ws) {
+    auto* userData = ws->getUserData();
+    std::string sessionID = generateSessionID();
+    userData->sessionID = sessionID;
 
+    activeConnections[sessionID] = ws;
+    notificationManager.addSession(sessionID);
 
-void WebSocketServer::handleMessage(std::string message, uWS::WebSocket<false, true, UserData>* ws) {
+    nlohmann::json response = { {"status", "success"}, {"sessionID", sessionID} };
+    ws->send(response.dump(), uWS::OpCode::TEXT);
+}
+
+void WebSocketServer::handleConnectionClose(uWS::WebSocket<false, true, UserData>* ws, int code, std::string_view message) {
+    auto* userData = ws->getUserData();
+    std::string sessionID = userData->sessionID;
+    activeConnections.erase(sessionID);
+    freeSessionID(sessionID);
+    notificationManager.removeSession(sessionID);
+
+    std::cout << "[INFO] Connection closed. Session ID: " << sessionID << " Code: "<< code << " Message: " << message << std::endl;
+}
+
+void WebSocketServer::handleMessage(const std::string& message, uWS::WebSocket<false, true, UserData>* ws) {
     try {
         auto json = nlohmann::json::parse(message);
+
+        if (!json.contains("sessionID") || !json.contains("action")) {
+            throw std::runtime_error("[Error] Invalid message format: Missing sessionID or action");
+        }
+
         std::string sessionID = json["sessionID"];
         std::string action = json["action"];
         auto* userData = ws->getUserData();
 
-        // Verify sessionID matches the WebSocket's sessionID
         if (userData->sessionID != sessionID) {
-            throw std::runtime_error("Invalid sessionID");
+            throw std::runtime_error("Unauthorized session ID");
         }
 
-        // Dispatch table for actions
-        static const std::unordered_map<std::string, std::function<void(const nlohmann::json&, uWS::WebSocket<false, true, UserData>*)>> actionHandlers = {
-            {"create", [this, sessionID](const nlohmann::json& payload, uWS::WebSocket<false, true, UserData>* ws) {
+        static const std::unordered_map<std::string, std::function<void(const nlohmann::json&)>> actionHandlers = {
+            {"create", [this, sessionID](const nlohmann::json& payload) {
                 notificationManager.createNotification(sessionID, payload);
-                nlohmann::json response = {{"status", "success"}, {"action", "create"}};
-                ws->send(response.dump(), uWS::OpCode::TEXT);
             }},
-            {"update", [this, sessionID](const nlohmann::json& payload, uWS::WebSocket<false, true, UserData>* ws) {
-                std::string notificationID = payload["notificationID"];
-                notificationManager.updateNotification(sessionID, notificationID, payload);
-                nlohmann::json response = {{"status", "success"}, {"action", "update"}};
-                ws->send(response.dump(), uWS::OpCode::TEXT);
+            {"update", [this, sessionID](const nlohmann::json& payload) {
+                notificationManager.updateNotification(sessionID, payload["notificationID"], payload);
             }},
-            {"delete", [this, sessionID](const nlohmann::json& payload, uWS::WebSocket<false, true, UserData>* ws) {
-                std::string notificationID = payload["notificationID"];
-                notificationManager.removeNotification(sessionID, notificationID);
-                nlohmann::json response = {{"status", "success"}, {"action", "delete"}};
-                ws->send(response.dump(), uWS::OpCode::TEXT);
+            {"delete", [this, sessionID](const nlohmann::json& payload) {
+                notificationManager.removeNotification(sessionID, payload["notificationID"]);
             }},
-            {"display", [this, sessionID](const nlohmann::json& payload, uWS::WebSocket<false, true, UserData>* ws) {
-                std::string notificationID = payload["notificationID"];
-                notificationManager.displayNotification(sessionID, notificationID);
-
-                nlohmann::json response = {{"status", "success"}, {"action", "display"}};
-                ws->send(response.dump(), uWS::OpCode::TEXT);
+            {"display", [this, sessionID](const nlohmann::json& payload) {
+                notificationManager.displayNotification(sessionID, payload["notificationID"]);
             }},
-            {"displayAll", [this, sessionID](const nlohmann::json&, uWS::WebSocket<false, true, UserData>* ws) {
+            {"displayAll", [this, sessionID](const nlohmann::json&) {
                 notificationManager.displayAllNotifications(sessionID);
-
-                nlohmann::json response = {{"status", "success"}, {"action", "displayAll"}};
-                ws->send(response.dump(), uWS::OpCode::TEXT);
             }}
         };
 
         auto it = actionHandlers.find(action);
         if (it != actionHandlers.end()) {
-            it->second(json["payload"], ws);
+            it->second(json["payload"]);
         }
         else {
-            throw std::runtime_error("Invalid action: " + action);
+            throw std::runtime_error("Unknown action: " + action);
         }
+
     }
     catch (const std::exception& e) {
-        std::cerr << "Error handling message: " << e.what() << std::endl;
-
+        std::cerr << "[ERROR] Exception in handleMessage: " << e.what() << std::endl;
         nlohmann::json errorResponse = { {"status", "error"}, {"message", e.what()} };
         ws->send(errorResponse.dump(), uWS::OpCode::TEXT);
     }
 }
-

@@ -4,9 +4,9 @@
 #include "notificationManager.h"
 #include <uwebsockets/App.h>
 #include <nlohmann/json.hpp>
-#include <iostream>
 #include <string>
 #include <unordered_map>
+#include <bitset>
 #include <atomic>
 
 struct UserData {
@@ -17,9 +17,9 @@ class WebSocketServer {
 public:
     WebSocketServer(NotificationManager& manager);
     ~WebSocketServer();
+
     void run();
     void stop();
-    void closeAllConnections();
 
 private:
     int port;
@@ -27,12 +27,14 @@ private:
     NotificationManager& notificationManager;
 
     std::unordered_map<std::string, uWS::WebSocket<false, true, UserData>*> activeConnections;
-
     std::bitset<32> usedIDs;
 
     std::string generateSessionID();
     void freeSessionID(const std::string& sessionID);
-    void handleMessage(std::string message, uWS::WebSocket<false, true, UserData>* ws);
+
+    void handleConnectionOpen(uWS::WebSocket<false, true, UserData>* ws);
+    void handleConnectionClose(uWS::WebSocket<false, true, UserData>* ws, int code, std::string_view message);
+    void handleMessage(const std::string& message, uWS::WebSocket<false, true, UserData>* ws);
 };
 
 #endif // WEBSOCKETSERVER_H

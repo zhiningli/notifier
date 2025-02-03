@@ -14,7 +14,7 @@ endif()
 set(SRC_FILES
     src/main.cpp
     src/notificationManager.cpp
-    src/session.cpp
+    
     src/windows_api.cpp
     src/notification.cpp
     src/shortcut_util.cpp 
@@ -22,7 +22,7 @@ set(SRC_FILES
 )
 set(HEADER_FILES
     include/notificationManager.h
-    include/session.h
+    
     include/windows_api.h
     include/notification.h
     include/shortcut_util.h

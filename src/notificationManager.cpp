@@ -1,15 +1,15 @@
 ﻿#include "notificationManager.h"
+#include "terminalUI.h"
+#include "windows_api.h"
 #include <nlohmann/json.hpp>
 
-// Singleton instance
+
 NotificationManager& NotificationManager::getInstance() {
     static NotificationManager instance;
     return instance;
 }
 
-NotificationManager::NotificationManager() {
-    std::cout << "[INFO] NotificationManager initialized." << std::endl;
-}
+NotificationManager::NotificationManager() {}
 
 void NotificationManager::addSession(const std::string& sessionID) {
     if (sessionToNotificationMap.count(sessionID)) {
@@ -18,7 +18,7 @@ void NotificationManager::addSession(const std::string& sessionID) {
     }
 
     sessionToNotificationMap[sessionID] = {};
-    std::cout << "[INFO] SessionID: " << sessionID << " added successfully." << std::endl;
+    TerminalUI::refreshScreen();
 }
 
 void NotificationManager::createNotification(const std::string& sessionID, const nlohmann::json& payload) {
@@ -37,7 +37,7 @@ void NotificationManager::createNotification(const std::string& sessionID, const
     }
     std::string notificationID = *notificationIDOpt;
 
-    auto notification = std::make_shared<Notification>(
+    auto notification = std::make_unique<Notification>(
         NotificationBuilder()
         .setTitle(title)
         .setMessage(msg)
@@ -48,12 +48,10 @@ void NotificationManager::createNotification(const std::string& sessionID, const
         .build()
     );
 
-    notifications[notificationID] = notification;
+    notifications[notificationID] = std::move(notification);
     sessionToNotificationMap[sessionID].insert(notificationID);
 
-    std::cout << "Notification \"" << notification->getTitle()
-        << "\" with session ID: " << sessionID << " added successfully." << std::endl;
-
+    TerminalUI::refreshScreen();
     displayNotification(sessionID, notificationID);
 }
 
@@ -66,14 +64,13 @@ void NotificationManager::updateNotification(const std::string& sessionID, const
     if (it != notifications.end()) {
         if (payload.contains("title")) it->second->setTitle(payload["title"]);
         if (payload.contains("message")) it->second->setMessage(payload["message"]);
-
-        std::cout << "Notification ID: " << notificationID << " updated for Session: " << sessionID << std::endl;
+        TerminalUI::refreshScreen();
+        displayNotification(sessionID, notificationID);
     }
     else {
         std::cerr << "Notification ID: " << notificationID << " not found." << std::endl;
     }
 
-    displayNotification(sessionID, notificationID);
 }
 
 void NotificationManager::removeNotification(const std::string& sessionID, const std::string& notificationID) {
@@ -83,14 +80,33 @@ void NotificationManager::removeNotification(const std::string& sessionID, const
 
     sessionToNotificationMap[sessionID].erase(notificationID);
     if (sessionToNotificationMap[sessionID].empty()) {
-        sessionToNotificationMap.erase(sessionID);
+        sessionToNotificationMap.erase(sessionID); 
     }
 
-    notifications.erase(notificationID);
+    notifications.erase(notificationID); 
     freeNotificationID(notificationID);
-
-    std::cout << "Notification ID: " << notificationID << " removed for Session: " << sessionID << std::endl;
+    TerminalUI::refreshScreen();
 }
+
+
+void NotificationManager::removeSession(const std::string& sessionID) {
+    auto sessionIt = sessionToNotificationMap.find(sessionID);
+    if (sessionIt == sessionToNotificationMap.end()) {
+        std::cerr << "[ERROR] SessionID: " << sessionID << " not found. Skipping removal.\n";
+        return;
+    }
+
+    for (const auto& notificationID : sessionIt->second) {
+        notifications.erase(notificationID);
+        freeNotificationID(notificationID);
+    }
+
+    sessionToNotificationMap.erase(sessionID);
+
+    TerminalUI::refreshScreen();
+}
+
+
 
 void NotificationManager::displayNotification(const std::string& sessionID, const std::string& notificationID) {
     if (!isSessionAuthorized(sessionID, notificationID)) {
@@ -99,7 +115,7 @@ void NotificationManager::displayNotification(const std::string& sessionID, cons
 
     auto it = notifications.find(notificationID);
     if (it != notifications.end()) {
-        windowsAPI.showNotification(it->second->getTitle(), it->second->getMessage());
+        WindowsAPI::showNotification(it->second->getTitle(), it->second->getMessage());
     }
     else {
         std::cerr << "No notification found with ID: " << notificationID << std::endl;
@@ -115,9 +131,27 @@ void NotificationManager::displayAllNotifications(const std::string& sessionID) 
     for (const auto& notificationID : sessionToNotificationMap[sessionID]) {
         auto it = notifications.find(notificationID);
         if (it != notifications.end()) {
-            windowsAPI.showNotification(it->second->getTitle(), it->second->getMessage());
+            WindowsAPI::showNotification(it->second->getTitle(), it->second->getMessage());
         }
     }
+}
+
+std::unordered_map<std::string, std::pair<std::string, std::string>> NotificationManager::getActiveNotifications() {
+    std::unordered_map<std::string, std::pair<std::string, std::string>> activeNotifications;
+
+    for (const auto& [notificationID, notification] : notifications) {
+        activeNotifications[notificationID] = { notification->getTitle(), notification->getMessage() };
+    }
+
+    return activeNotifications;
+}
+
+std::set<std::string> NotificationManager::getActiveSessions() {
+    std::set<std::string> activeSessions;
+    for (const auto& [sessionID, _] : sessionToNotificationMap) {
+        activeSessions.insert(sessionID);
+    }
+    return activeSessions;
 }
 
 NotificationManager::~NotificationManager() {
@@ -129,6 +163,7 @@ NotificationManager::~NotificationManager() {
 
     std::cout << "[INFO] NotificationManager destroyed." << std::endl;
 }
+
 
 std::optional<std::string> NotificationManager::allocateNotificationID() {
     for (size_t i = 0; i < usedNotificationIDs.size(); ++i) {
