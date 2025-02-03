@@ -17,9 +17,7 @@ Lightweight Notifier is a simple and efficient tool designed to bridge client sc
 You can write client scripts based on your interests, send an update to the notifier, and a toast notification will pop up on your screen.
 
 
-```markdown
 ![Notifier Example](assets/notifier-creation-example.png)
-```
 
 
 ## **How to Use**
@@ -70,27 +68,15 @@ Once connected, you can send notifications to the notifier. The server expects n
 
 ---
 
+## **Common Questions**
+The Windows Toast Notification requires a start-menu shortcut. This is the reason why there is a `shortcut_util` class. This is weird but a necessary step. Relevant information can be found at:
+[Windows Toast Notification Documentation](https://learn.microsoft.com/en-us/previous-versions/windows/apps/hh779727(v=win.10))
+
 ## **License**
 This project is licensed under the **MIT License**.
 
 ---
 
-### **How to Add Screenshots or Photos to README**
-1. **Place the image inside your repository** (e.g., inside an `assets` folder).
-2. **Reference it in your README.md**:
-   ```markdown
-   ![Description](assets/your-image.png)
-   ```
-3. **If using an online image**, provide a direct URL:
-   ```markdown
-   ![Description](https://example.com/image.png)
-   ```
-4. **Commit the image** along with your README changes.
-
----
-
-### **Final Thoughts**
-This README now has a cleaner structure, corrected typos, improved clarity, and additional helpful information (like adding screenshots). If you need further refinements, let me know! 🚀
 
 
 
