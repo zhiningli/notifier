@@ -18,6 +18,8 @@ class NotificationManager {
 public:
     static NotificationManager& getInstance();
 
+    void addSession(const std::string& sessionID);
+
     void createNotification(const std::string& sessionID, const nlohmann::json& payload);
     void updateNotification(const std::string& sessionID, const std::string& notificationID, const nlohmann::json& payload);
     void removeNotification(const std::string& sessionID, const std::string& notificationID);

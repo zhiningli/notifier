@@ -28,6 +28,7 @@ void WebSocketServer::run() {
                 std::unique_lock lock(connectionsMutex);
                 activeConnections[sessionID] = ws;
             }
+            notificationManager.addSession(sessionID);
             TerminalUI::displayAcknowledgement(sessionID);
             nlohmann::json response = { {"status", "success"}, {"sessionID", sessionID} };
             ws->send(response.dump(), uWS::OpCode::TEXT);
@@ -148,27 +149,27 @@ void WebSocketServer::handleMessage(std::string message, uWS::WebSocket<false, t
                 nlohmann::json response = {{"status", "success"}, {"action", "create"}};
                 ws->send(response.dump(), uWS::OpCode::TEXT);
             }},
-            {"update", [this](const nlohmann::json& payload, uWS::WebSocket<false, true, UserData>* ws) {
+            {"update", [this, sessionID](const nlohmann::json& payload, uWS::WebSocket<false, true, UserData>* ws) {
                 std::string notificationID = payload["notificationID"];
-                notificationManager.updateNotification(notificationID, payload);
+                notificationManager.updateNotification(sessionID, notificationID, payload);
                 nlohmann::json response = {{"status", "success"}, {"action", "update"}};
                 ws->send(response.dump(), uWS::OpCode::TEXT);
             }},
-            {"delete", [this](const nlohmann::json& payload, uWS::WebSocket<false, true, UserData>* ws) {
+            {"delete", [this, sessionID](const nlohmann::json& payload, uWS::WebSocket<false, true, UserData>* ws) {
                 std::string notificationID = payload["notificationID"];
-                notificationManager.removeNotification(notificationID);
+                notificationManager.removeNotification(sessionID, notificationID);
                 nlohmann::json response = {{"status", "success"}, {"action", "delete"}};
                 ws->send(response.dump(), uWS::OpCode::TEXT);
             }},
-            {"display", [this](const nlohmann::json& payload, uWS::WebSocket<false, true, UserData>* ws) {
+            {"display", [this, sessionID](const nlohmann::json& payload, uWS::WebSocket<false, true, UserData>* ws) {
                 std::string notificationID = payload["notificationID"];
-                notificationManager.displayNotification(notificationID);
+                notificationManager.displayNotification(sessionID, notificationID);
 
                 nlohmann::json response = {{"status", "success"}, {"action", "display"}};
                 ws->send(response.dump(), uWS::OpCode::TEXT);
             }},
-            {"displayAll", [this](const nlohmann::json&, uWS::WebSocket<false, true, UserData>* ws) {
-                notificationManager.displayAllNotifications();
+            {"displayAll", [this, sessionID](const nlohmann::json&, uWS::WebSocket<false, true, UserData>* ws) {
+                notificationManager.displayAllNotifications(sessionID);
 
                 nlohmann::json response = {{"status", "success"}, {"action", "displayAll"}};
                 ws->send(response.dump(), uWS::OpCode::TEXT);

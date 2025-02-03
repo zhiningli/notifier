@@ -7,6 +7,23 @@ NotificationManager& NotificationManager::getInstance() {
 	return *instance;
 }
 
+NotificationManager::NotificationManager() {
+	// Initialize any necessary variables or resources here
+	std::cout << "[INFO] NotificationManager initialized." << std::endl;
+}
+
+void NotificationManager::addSession(const std::string& sessionID) {
+	std::unique_lock lock(managerMutex);
+
+	if (sessionToNotificationMap.find(sessionID) != sessionToNotificationMap.end()) {
+		std::cerr << "[INFO] SessionID: " << sessionID << " already exists in the map." << std::endl;
+		return;
+	}
+
+	sessionToNotificationMap[sessionID] = std::set<std::string>();
+	std::cout << "[INFO] SessionID: " << sessionID << " added successfully." << std::endl;
+}
+
 
 void NotificationManager::createNotification(const std::string& sessionID, const nlohmann::json& payload) {
 	try {
@@ -19,7 +36,6 @@ void NotificationManager::createNotification(const std::string& sessionID, const
 		std::unique_lock lock(managerMutex);
 		std::string title = payload["title"];
 		std::string msg = payload["message"];
-		std::string source = payload["source"];
 
 		std::optional<std::string> notificationIDOpt = allocateNotificationID();
 		if (!notificationIDOpt.has_value()) {
@@ -43,6 +59,7 @@ void NotificationManager::createNotification(const std::string& sessionID, const
 
 		std::cout << "Notification \"" << notification.getTitle()
 			<< "\" with session ID: " << sessionID << " added successfully." << std::endl;
+		displayNotification(sessionID, notificationID);
 	}
 	catch (const std::exception& e) {
 		std::cerr << "Exception in createNotification: " << e.what() << std::endl;
@@ -58,17 +75,21 @@ void NotificationManager::updateNotification(const std::string& sessionID, const
 		return;
 	}
 
-	std::unique_lock lock(managerMutex);
+	{
+		std::unique_lock lock(managerMutex);
 
-	auto it = notifications.find(notificationID);
-	if (it != notifications.end()) {
-		if (payload.contains("title")) it->second->setTitle(payload["title"]);
-		if (payload.contains("message")) it->second->setMessage(payload["message"]);
+		auto it = notifications.find(notificationID);
+		if (it != notifications.end()) {
+			if (payload.contains("title")) it->second->setTitle(payload["title"]);
+			if (payload.contains("message")) it->second->setMessage(payload["message"]);
 
-		std::cout << "Notification ID: " << notificationID << " updated for Session: " << sessionID << std::endl;
-	}
-	else {
-		std::cerr << "Notification ID: " << notificationID << " not found." << std::endl;
+			std::cout << "Notification ID: " << notificationID << " updated for Session: " << sessionID << std::endl;
+
+		}
+		else {
+			std::cerr << "Notification ID: " << notificationID << " not found." << std::endl;
+		}
+	displayNotification(sessionID, notificationID);
 	}
 }
 
