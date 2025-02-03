@@ -4,11 +4,23 @@ project(notifier VERSION 1.0 DESCRIPTION "Lightweight Notifier Application" LANG
 # Specify C++ Standard
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_GENERATOR_PLATFORM x64)
+
 
 # Enable vcpkg integration
 if(DEFINED ENV{VCPKG_ROOT})
     set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")
 endif()
+
+# Determine Build Type
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    message(STATUS "Development mode enabled")
+    add_compile_definitions(DEV_MODE=1)  
+else()
+    message(STATUS "Production mode enabled")
+    add_compile_definitions(DEV_MODE=0)
+endif()
+
 
 # Source and Header Files
 set(SRC_FILES
@@ -33,18 +45,36 @@ add_executable(notifier ${SRC_FILES} ${HEADER_FILES})
 # Include Directories
 target_include_directories(notifier PRIVATE include)
 
-# Find and link uWebSockets
-find_package(unofficial-uwebsockets CONFIG REQUIRED)
-find_package(nlohmann_json CONFIG REQUIRED)
-target_link_libraries(notifier PRIVATE WindowsApp.lib winmm unofficial::uwebsockets::uwebsockets PRIVATE nlohmann_json::nlohmann_json)
+# Add NDEBUG Definition for Release Mode
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_compile_definitions(notifier PRIVATE NDEBUG)
+endif()
 
+# Find and Link Libraries
+set(unofficial-uwebsockets_DIR "C:/vcpkg/installed/x64-windows/share/unofficial-uwebsockets")
+set(unofficial-usockets_DIR "C:/vcpkg/installed/x64-windows/share/unofficial-usockets")
+set(libuv_DIR "C:/vcpkg/installed/x64-windows/share/libuv")
+set(nlohmann_json_DIR "C:/vcpkg/installed/x64-windows/share/nlohmann_json")
+
+
+find_package(unofficial-usockets CONFIG REQUIRED)
+find_package(unofficial-uwebsockets CONFIG REQUIRED)
+find_package(libuv CONFIG REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
+target_link_libraries(
+    notifier 
+    PRIVATE WindowsApp.lib 
+    PRIVATE unofficial::usockets::usockets
+    PRIVATE unofficial::uwebsockets::uwebsockets
+    PRIVATE libuv::uv
+    PRIVATE nlohmann_json::nlohmann_json
+)
 # Windows Runtime Support
 target_compile_options(notifier PRIVATE /await)
 
 if(MSVC)
     set(CMAKE_CXX_FLAGS "/W4 /std:c++20 /EHsc")
 endif()
-
 
 # Set Output Directory for Binary
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)

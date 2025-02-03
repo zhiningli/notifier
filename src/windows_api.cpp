@@ -55,28 +55,13 @@ void WindowsAPI::showNotification(const std::string& title, const std::string& m
     }
 }
 
-
-void WindowsAPI::playSound(const std::string& soundFile) {
-	PlaySound(
-		soundFile.c_str(),
-		NULL,
-		SND_FILENAME | SND_ASYNC
-	);
-}
-
 void WindowsAPI::cleanup() {
 	winrt::uninit_apartment();
 	std::cout << "WindowsAPI cleanup completed." << std::endl;
 }
 
 void WindowsAPI::terminateSession() {
-	stopSound();
 	cleanup();
 	std::cout << "Session terminated gracefully." << std::endl;
 	exit(0);
-}
-
-void WindowsAPI::stopSound() {
-	PlaySound(NULL, NULL, 0);  // Stop sound playback
-	std::cout << "Sound playback stopped." << std::endl;
 }

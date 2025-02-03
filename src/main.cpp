@@ -1,4 +1,4 @@
-﻿#include "websocketServer.h"
+#include "websocketServer.h"
 #include "notificationManager.h"
 #include "terminalUI.h"
 #include <iostream>

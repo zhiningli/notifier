@@ -11,10 +11,8 @@
 class WindowsAPI {
 public:
 	static void showNotification(const std::string& title, const std::string& message);
-	static void playSound(const std::string & fileName);
 	static void cleanup();
 	static void terminateSession();
-	static void stopSound();
 private:
 };
 

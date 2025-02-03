@@ -1,0 +1,57 @@
+{
+	"version": 3,
+	"cmakeMinimumRequired": {
+		"major": 3,
+		"minor": 19,
+		"patch": 0
+	},
+	"configurePresets": [
+		{
+			"name": "dev",
+			"description": "Development build",
+			"generator": "Ninja",
+			"binaryDir": "build/dev",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Debug",
+				"CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+				"CMAKE_C_COMPILER": "cl.exe",
+				"CMAKE_CXX_COMPILER": "cl.exe",
+				"libuv_DIR": "C:/vcpkg/installed/x64-windows/share/libuv",
+				"nlohmann_json_DIR": "C:/vcpkg/installed/x64-windows/share/nlohmann_json",
+				"unofficial-usockets_DIR": "C:/vcpkg/installed/x64-windows/share/unofficial-usockets",
+				"unofficial-uwebsockets_DIR": "C:/vcpkg/installed/x64-windows/share/unofficial-uwebsockets"
+			}
+		},
+		{
+			"name": "prod",
+			"description": "Production build",
+			"generator": "Ninja",
+			"binaryDir": "build/prod",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Release",
+				"CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+				"CMAKE_C_COMPILER": "cl.exe",
+				"CMAKE_CXX_COMPILER": "cl.exe",
+				"libuv_DIR": "C:/vcpkg/installed/x64-windows/share/libuv",
+				"nlohmann_json_DIR": "C:/vcpkg/installed/x64-windows/share/nlohmann_json",
+				"unofficial-usockets_DIR": "C:/vcpkg/installed/x64-windows/share/unofficial-usockets",
+				"unofficial-uwebsockets_DIR": "C:/vcpkg/installed/x64-windows/share/unofficial-uwebsockets"
+			}
+		}
+	],
+	"buildPresets": [
+		{
+			"name": "dev",
+			"configurePreset": "dev",
+			"description": "Build using the dev preset",
+			"jobs": 4
+		},
+		{
+			"name": "prod",
+			"configurePreset": "prod",
+			"description": "Build using the prod preset",
+			"jobs": 4
+		}
+	]
+}
+

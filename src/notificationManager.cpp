@@ -1,4 +1,4 @@
-﻿#include "notificationManager.h"
+#include "notificationManager.h"
 #include "terminalUI.h"
 #include "windows_api.h"
 #include <nlohmann/json.hpp>
