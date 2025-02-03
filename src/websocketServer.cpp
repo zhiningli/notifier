@@ -23,11 +23,7 @@ void WebSocketServer::run() {
             auto userData = ws->getUserData();
             std::string sessionID = generateSessionID();
             userData->sessionID = sessionID;
-
-            {
-                std::unique_lock lock(connectionsMutex);
-                activeConnections[sessionID] = ws;
-            }
+            activeConnections[sessionID] = ws;
             notificationManager.addSession(sessionID);
             TerminalUI::displayAcknowledgement(sessionID);
             nlohmann::json response = { {"status", "success"}, {"sessionID", sessionID} };
@@ -44,11 +40,8 @@ void WebSocketServer::run() {
         },
         .close = [this](auto* ws, int code, std::string_view message) {
 			UserData* userData = ws->getUserData();
-            {
-                std::unique_lock lock(connectionsMutex);
-				freeSessionID(userData->sessionID);
-				activeConnections.erase(userData->sessionID);
-            }
+			freeSessionID(userData->sessionID);
+			activeConnections.erase(userData->sessionID);
 			TerminalUI::displayTerminationAcknowledgement(
                 userData->sessionID, 
                 code, 
@@ -82,7 +75,6 @@ void WebSocketServer::stop() {
 
 
 void WebSocketServer::closeAllConnections() {
-    std::unique_lock<std::shared_mutex> lock{ connectionsMutex };
 
 
     for (auto& [sessionID, ws] : activeConnections) {
@@ -100,7 +92,6 @@ void WebSocketServer::closeAllConnections() {
 
 
 std::string WebSocketServer::generateSessionID() {
-    std::unique_lock lock(idMutex);
     for (size_t i = 0; i < usedIDs.size(); ++i) {
         if (!usedIDs.test(i)) {
             usedIDs.set(i);
@@ -113,7 +104,6 @@ std::string WebSocketServer::generateSessionID() {
 }
 
 void WebSocketServer::freeSessionID(const std::string& sessionID) {
-    std::unique_lock lock(idMutex);
     try {
         int id = std::stoi(sessionID);
         if (id >= 0 && id < 32 && usedIDs.test(id)) { 

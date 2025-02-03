@@ -8,7 +8,6 @@
 #include <string>
 #include <unordered_map>
 #include <atomic>
-#include <shared_mutex>
 
 struct UserData {
     std::string sessionID;
@@ -22,20 +21,17 @@ public:
     void stop();
     void closeAllConnections();
 
-
 private:
     int port;
     std::atomic<bool> keepRunning;
     NotificationManager& notificationManager;
 
-	std::unordered_map<std::string, uWS::WebSocket<false, true, UserData>*> activeConnections;
-    std::shared_mutex connectionsMutex;
+    std::unordered_map<std::string, uWS::WebSocket<false, true, UserData>*> activeConnections;
 
     std::bitset<32> usedIDs;
-    std::shared_mutex idMutex; 
 
-	std::string generateSessionID();
-	void freeSessionID(const std::string& sessionID);
+    std::string generateSessionID();
+    void freeSessionID(const std::string& sessionID);
     void handleMessage(std::string message, uWS::WebSocket<false, true, UserData>* ws);
 };
 
