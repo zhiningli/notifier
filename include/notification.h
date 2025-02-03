@@ -10,19 +10,12 @@ enum class StatusEnum {
     Unknown,
 };
 
-enum class SourceEnum {
-    Python,
-    Cpp,
-    Unknown,
-};
-
 class Notification {
 public:
     Notification(const std::string& title,
         const std::string& message,
         const std::string& notificationID,
         const std::string& sessionID,
-        SourceEnum source,
         StatusEnum status,
         std::chrono::system_clock::time_point creationTime);
 
@@ -31,7 +24,6 @@ public:
     const std::string& getMessage() const;
     const std::string& getNotificationID() const;
     const std::string& getSessionID() const;
-    SourceEnum getSource() const;
     StatusEnum getStatus() const;
     std::chrono::system_clock::time_point getCreationTime() const;
 
@@ -44,7 +36,6 @@ private:
     std::string _message;
     std::string _notificationID;
     std::string _sessionID;
-    SourceEnum _source;
     StatusEnum _status;
     std::chrono::system_clock::time_point _creationTime;
 };
@@ -55,7 +46,6 @@ public:
     NotificationBuilder& setMessage(const std::string& message);
     NotificationBuilder& setNotificationID(const std::string& notificationID);
     NotificationBuilder& setSessionID(const std::string& sessionID);
-    NotificationBuilder& setSource(SourceEnum source);
     NotificationBuilder& setStatus(StatusEnum status);
     NotificationBuilder& setCreationTime(std::chrono::system_clock::time_point creationTime);
 
@@ -66,7 +56,6 @@ private:
     std::string _message = "Default Message";
     std::string _notificationID = "Default NotificationID";
     std::string _sessionID = "Default SessionID";
-    SourceEnum _source = SourceEnum::Unknown;
     StatusEnum _status = StatusEnum::Unknown;
     std::chrono::system_clock::time_point _creationTime = std::chrono::system_clock::now();
 };
