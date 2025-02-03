@@ -19,31 +19,19 @@ public:
     void addNotification(const Notification& notification);
     void removeNotification(const std::string& sessionID);
     void displayAllNotifications();
-    void displayLatestNotification();
-    void updateExpiredNotifications();
-    void updateNotificationExpiry(const std::string& sessionID,
-        const std::chrono::system_clock::time_point& newExpiry);
 
     ~NotificationManager();
 
 private:
-    struct ExpiryComparator {
-        bool operator()(const std::shared_ptr<Notification>& a,
-            const std::shared_ptr<Notification>& b) const {
-            return a->getExpiryTime() < b->getExpiryTime();
-        }
-    };
 
 
     std::unordered_map<std::string, std::shared_ptr<Notification>> notifications;
-    std::multiset<std::shared_ptr<Notification>, ExpiryComparator> expirySet;
     std::mutex managerMutex;
 
     WindowsAPI windowsAPI;
 
     std::atomic<bool> stopExpiryChecker;
     std::thread expiryCheckerThread;
-    void expiryChecker();
 
     NotificationManager();
     NotificationManager(const NotificationManager&) = delete;
