@@ -14,10 +14,7 @@ void WindowsAPI::showNotification(const std::string& title, const std::string& m
     using namespace winrt::Windows::Data::Xml::Dom;
 
     try {
-        // Initialize COM
-        std::cout << "Initializing COM..." << std::endl;
         winrt::init_apartment();
-        std::cout << "COM initialized successfully." << std::endl;
 
         // Create XML for toast notification
         std::wstring toastXml =
@@ -30,18 +27,14 @@ void WindowsAPI::showNotification(const std::string& title, const std::string& m
             L"</visual>"
             L"</toast>";
 
-        std::wcout << L"Toast XML: " << toastXml << std::endl;
 
         XmlDocument xmlDoc;
         xmlDoc.LoadXml(toastXml);
-        std::cout << "Toast XML loaded into XmlDocument." << std::endl;
 
         // Create a toast notification
         ToastNotification toast(xmlDoc);
-        std::cout << "ToastNotification created." << std::endl;
 
         // Show the toast notification
-        std::cout << "About to show toast notification..." << std::endl;
         auto notifier = ToastNotificationManager::CreateToastNotifier(L"com.example.notifier");
 
         if (!notifier) {
@@ -49,7 +42,6 @@ void WindowsAPI::showNotification(const std::string& title, const std::string& m
         }
 
         notifier.Show(toast);
-        std::cout << "Toast notification displayed successfully." << std::endl;
     }
     catch (const winrt::hresult_error& e) {
         std::wcerr << L"Error in Show: " << e.message().c_str() << std::endl;

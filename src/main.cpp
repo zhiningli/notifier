@@ -8,7 +8,7 @@
 std::atomic<bool> keepRunning(true);
 std::atomic<bool> terminateProgramme(false);
 
-void signalHandler(int signal) {
+static void signalHandler(int signal) {
     if (terminateProgramme.load()) {
         std::cout << "\nSignal received: " << signal << ". Exiting program..." << std::endl;
         keepRunning.store(false);

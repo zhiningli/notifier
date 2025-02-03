@@ -79,9 +79,6 @@ void NotificationManager::removeNotification(const std::string& sessionID, const
     }
 
     sessionToNotificationMap[sessionID].erase(notificationID);
-    if (sessionToNotificationMap[sessionID].empty()) {
-        sessionToNotificationMap.erase(sessionID); 
-    }
 
     notifications.erase(notificationID); 
     freeNotificationID(notificationID);
