@@ -17,9 +17,7 @@ Lightweight Notifier is a simple and efficient tool designed to bridge client sc
 You can write client scripts based on your interests, send an update to the notifier, and a toast notification will pop up on your screen.
 
 
-```markdown
 ![Notifier Example](assets/notifier-creation-example.png)
-```
 
 
 ## **How to Use**
