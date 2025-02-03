@@ -143,36 +143,20 @@ void WebSocketServer::handleMessage(std::string message, uWS::WebSocket<false, t
 
         // Dispatch table for actions
         static const std::unordered_map<std::string, std::function<void(const nlohmann::json&, uWS::WebSocket<false, true, UserData>*)>> actionHandlers = {
-            {"create", [this](const nlohmann::json& payload, uWS::WebSocket<false, true, UserData>* ws) {
-                std::string title = payload["title"];
-                std::string msg = payload["message"];
-                std::string source = payload["source"];
-                auto expiryTime = std::chrono::system_clock::from_time_t(payload["expiry"]);
-
-                Notification notification = NotificationBuilder()
-                    .setTitle(title)
-                    .setMessage(msg)
-                    .setSourceID(ws->getUserData()->sessionID)
-                    .setSource(Notification::SourceEnum::Cpp)
-                    .setExpiryTime(expiryTime)
-                    .build();
-
-                notificationManager.addNotification(notification);
-
+            {"create", [this, sessionID](const nlohmann::json& payload, uWS::WebSocket<false, true, UserData>* ws) {
+                notificationManager.createNotification(sessionID, payload);
                 nlohmann::json response = {{"status", "success"}, {"action", "create"}};
                 ws->send(response.dump(), uWS::OpCode::TEXT);
             }},
             {"update", [this](const nlohmann::json& payload, uWS::WebSocket<false, true, UserData>* ws) {
                 std::string notificationID = payload["notificationID"];
                 notificationManager.updateNotification(notificationID, payload);
-
                 nlohmann::json response = {{"status", "success"}, {"action", "update"}};
                 ws->send(response.dump(), uWS::OpCode::TEXT);
             }},
             {"delete", [this](const nlohmann::json& payload, uWS::WebSocket<false, true, UserData>* ws) {
                 std::string notificationID = payload["notificationID"];
                 notificationManager.removeNotification(notificationID);
-
                 nlohmann::json response = {{"status", "success"}, {"action", "delete"}};
                 ws->send(response.dump(), uWS::OpCode::TEXT);
             }},
