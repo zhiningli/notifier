@@ -21,10 +21,10 @@ void NotificationManager::addSession(const std::string& sessionID) {
     TerminalUI::refreshScreen();
 }
 
-void NotificationManager::createNotification(const std::string& sessionID, const nlohmann::json& payload) {
+std::string NotificationManager::createNotification(const std::string& sessionID, const nlohmann::json& payload) {
     if (!sessionToNotificationMap.count(sessionID)) {
         std::cerr << "[ERROR] SessionID: " << sessionID << " not found. Unauthorized attempt!" << std::endl;
-        return;
+        return "";
     }
 
     std::string title = payload["title"];
@@ -33,7 +33,7 @@ void NotificationManager::createNotification(const std::string& sessionID, const
     std::optional<std::string> notificationIDOpt = allocateNotificationID();
     if (!notificationIDOpt) {
         std::cerr << "[ERROR] No available notification IDs!" << std::endl;
-        return;
+        return "No available session ID";
     }
     std::string notificationID = *notificationIDOpt;
 
@@ -53,6 +53,8 @@ void NotificationManager::createNotification(const std::string& sessionID, const
 
     TerminalUI::refreshScreen();
     displayNotification(sessionID, notificationID);
+
+    return notificationID;
 }
 
 void NotificationManager::updateNotification(const std::string& sessionID, const std::string& notificationID, const nlohmann::json& payload) {

@@ -17,7 +17,7 @@ WebSocketServer::~WebSocketServer() {
 void WebSocketServer::run() {
     uWS::App()
         .ws<UserData>("/*", {
-            .idleTimeout = 16,
+            .idleTimeout = 960,
             .open = [this](uWS::WebSocket<false, true, UserData>* ws) {
                 handleConnectionOpen(ws);
             },
@@ -94,7 +94,7 @@ void WebSocketServer::handleConnectionOpen(uWS::WebSocket<false, true, UserData>
     activeConnections[sessionID] = ws;
     notificationManager.addSession(sessionID);
 
-    nlohmann::json response = { {"status", "success"}, {"sessionID", sessionID} };
+    nlohmann::json response = { {"status", "success"}, {"sessionID", sessionID}, {"action", "session_assigned"}};
     ws->send(response.dump(), uWS::OpCode::TEXT);
 }
 
@@ -104,6 +104,7 @@ void WebSocketServer::handleConnectionClose(uWS::WebSocket<false, true, UserData
     activeConnections.erase(sessionID);
     freeSessionID(sessionID);
     notificationManager.removeSession(sessionID);
+    
 
     std::cout << "[INFO] Connection closed. Session ID: " << sessionID << " Code: "<< code << " Message: " << message << std::endl;
 }
@@ -125,21 +126,35 @@ void WebSocketServer::handleMessage(const std::string& message, uWS::WebSocket<f
         }
 
         static const std::unordered_map<std::string, std::function<void(const nlohmann::json&)>> actionHandlers = {
-            {"create", [this, sessionID](const nlohmann::json& payload) {
-                notificationManager.createNotification(sessionID, payload);
+            {"create", [this, sessionID, ws](const nlohmann::json& payload) {
+                std::string notificationID = notificationManager.createNotification(sessionID, payload);
+                nlohmann::json response = { {"status", "success"}, {"sessionID", sessionID}, {"payload", {{"action", "create"}, {"notificationID", notificationID}}} };
+                ws->send(response.dump(), uWS::OpCode::TEXT);
             }},
-            {"update", [this, sessionID](const nlohmann::json& payload) {
+            {"update", [this, sessionID, ws](const nlohmann::json& payload) {
                 notificationManager.updateNotification(sessionID, payload["notificationID"], payload);
+                nlohmann::json response = { {"status", "success"}, {"sessionID", sessionID}, {"payload", {{"action", "update"}, {"notificationID", payload["notificationID"]}}} };
+                ws->send(response.dump(), uWS::OpCode::TEXT);
             }},
-            {"delete", [this, sessionID](const nlohmann::json& payload) {
+            {"delete", [this, sessionID, ws](const nlohmann::json& payload) {
                 notificationManager.removeNotification(sessionID, payload["notificationID"]);
+                nlohmann::json response = { {"status", "success"}, {"sessionID", sessionID}, {"payload", {{"action", "delete"}, {"notificationID", payload["notificationID"]}} } };
+                ws->send(response.dump(), uWS::OpCode::TEXT);
             }},
-            {"display", [this, sessionID](const nlohmann::json& payload) {
+            {"display", [this, sessionID, ws](const nlohmann::json& payload) {
                 notificationManager.displayNotification(sessionID, payload["notificationID"]);
+                nlohmann::json response = { {"status", "success"}, {"sessionID", sessionID}, {"payload", {{"action", "display"}, {"notificationID", payload["notificationID"]}}} };
+                ws->send(response.dump(), uWS::OpCode::TEXT);
             }},
-            {"displayAll", [this, sessionID](const nlohmann::json&) {
+            {"displayAll", [this, sessionID, ws](const nlohmann::json&) {
                 notificationManager.displayAllNotifications(sessionID);
-            }}
+                nlohmann::json response = { {"status", "success"}, {"sessionID", sessionID}, {"payload", {"action", "displayAll"}} };
+                ws->send(response.dump(), uWS::OpCode::TEXT);
+            }},
+            {"ping", [this, sessionID, ws](const nlohmann::json& payload) {
+                nlohmann::json response = {{"status", "success"}, {"sessionID", sessionID}, {"payload", {"action", "pong"}}};
+                ws->send(response.dump(), uWS::OpCode::TEXT);
+            }},
         };
 
         auto it = actionHandlers.find(action);

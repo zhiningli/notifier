@@ -14,7 +14,7 @@ public:
     static NotificationManager& getInstance();
 
     void addSession(const std::string& sessionID);
-    void createNotification(const std::string& sessionID, const nlohmann::json& payload);
+    std::string createNotification(const std::string& sessionID, const nlohmann::json& payload);
     void updateNotification(const std::string& sessionID, const std::string& notificationID, const nlohmann::json& payload);
     void removeNotification(const std::string& sessionID, const std::string& notificationID);
     void removeSession(const std::string& sessionID);
