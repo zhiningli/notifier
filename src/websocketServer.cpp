@@ -101,6 +101,12 @@ void WebSocketServer::handleConnectionOpen(uWS::WebSocket<false, true, UserData>
 void WebSocketServer::handleConnectionClose(uWS::WebSocket<false, true, UserData>* ws, int code, std::string_view message) {
     auto* userData = ws->getUserData();
     std::string sessionID = userData->sessionID;
+
+    if (code != 1000) {
+        std::cerr << "[Warning] Unexpected Websocket disconnection. Code: " << code
+            << " Message: " << message << " SessionID: " << sessionID << std::endl;
+    }
+
     activeConnections.erase(sessionID);
     freeSessionID(sessionID);
     notificationManager.removeSession(sessionID);
