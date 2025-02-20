@@ -43,7 +43,7 @@ If successful, you shall see both a windows toast notification as well as it dis
 ```
 
 
-** Updating a notification**
+**Updating a notification**
 ```javascript
 {
     "action": "update",
@@ -57,7 +57,7 @@ If successful, you shall see both a windows toast notification as well as it dis
 
 ```
 
-** Deleting a notification **
+**Deleting a notification**
 ```javascript
 {
     "action": "delete",
@@ -68,7 +68,7 @@ If successful, you shall see both a windows toast notification as well as it dis
 }
 ```
 
-** Display and display all notification
+**Display and display all notification**
 ```javascript
 {
     "action": "display",
@@ -76,7 +76,7 @@ If successful, you shall see both a windows toast notification as well as it dis
 }
 ```
 
-** Ping
+**Ping**
 
 Websocket by default terminates after 960 seconds of idle time. So ping the notifer occasionally to keep the connection open
 
